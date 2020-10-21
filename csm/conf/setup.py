@@ -41,6 +41,7 @@ from cortx.utils.schema.payload import Json
 from cortx.utils.data.db.db_provider import (DataBaseProvider, GeneralConfig)
 from csm.common.payload import Text
 from cortx.utils.product_features import unsupported_features
+from csm.conf.setup.uds import UDSConfigGenerator
 
 # try:
 #     from salt import client
@@ -759,6 +760,13 @@ class CsmSetup(Setup):
         if "f" in args.keys() and args["f"] is True:
             raise Exception("Not implemented for force action")
 
+    @staticmethod
+    def _is_feature_supported(feature_name):
+        loop = asyncio.get_event_loop()
+        unsupported_feature_instance = unsupported_features.UnsupportedFeaturesDB()
+        return loop.run_until_complete(unsupported_feature_instance.is_feature_supported(
+                const.CSM_COMPONENT_NAME, feature_name))
+
     def post_install(self, args):
         """
         Perform post-install for csm
@@ -816,6 +824,9 @@ class CsmSetup(Setup):
             ha_check = Conf.get(const.CSM_GLOBAL_INDEX, "HA.enabled")
             if ha_check:
                 self._config_cluster(args)
+            cls = self.__class__
+            if cls._is_feature_supported(const.LYVE_PILOT)
+                UDSConfigGenerator.apply()
         except Exception as e:
             raise CsmSetupError(f"csm_setup init failed. Error: {e} - {str(traceback.print_exc())}")
 
@@ -843,6 +854,9 @@ class CsmSetup(Setup):
                 self._config_user_permission(reset=True)
                 self.Config.delete()
                 self._config_user(reset=True)
+                cls = self.__class__
+                if cls._is_feature_supported(const.LYVE_PILOT)
+                    UDSConfigGenerator.delete()
             else:
                 self.Config.reset()
                 self.ConfigServer.restart()
